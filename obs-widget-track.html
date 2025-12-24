@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>OBS Widget - Яндекс.Музыка</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            background-color: transparent;
+            color: #ffffff;
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+        }
+
+        .player-content {
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            margin: auto;
+        }
+
+        .album-art-container {
+            position: relative;
+            width: 100%;
+            padding-top: 100%; /* 1:1 Aspect Ratio */
+            margin: 0 auto 25px;
+        }
+
+        .album-art {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .album-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .album-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            color: rgba(255, 255, 255, 0.2);
+            position: absolute;
+            top: 0;
+        }
+
+        #trackTitle {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            white-space: nowrap;
+        }
+
+        #trackArtist {
+            font-size: 22px;
+            color: #cccccc;
+            margin-bottom: 25px;
+            white-space: nowrap;
+        }
+
+        .progress-container {
+            margin: 25px 0;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #FF3B30;
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.5s linear;
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            color: #bbbbbb;
+            font-size: 14px;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .volume-control i {
+            font-size: 22px;
+            color: #cccccc;
+            width: 25px;
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+         .volume-fill {
+            height: 100%;
+            background: #cccccc;
+            border-radius: 4px;
+            width: 0%;
+         }
+
+        .volume-value {
+            min-width: 50px;
+            text-align: right;
+            font-weight: 700;
+            font-size: 16px;
+            color: #ffffff;
+        }
+
+        #placeholder {
+            font-size: 24px;
+            color: #bbbbbb;
+            text-align: center;
+            padding: 40px 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div id="playerContainer" class="player-content" style="display: none;">
+    <div class="album-art-container">
+        <div class="album-art">
+            <div class="album-placeholder" id="albumPlaceholder">
+                <i class="fas fa-music"></i>
+            </div>
+            <img id="albumImage" class="album-image" alt="Обложка" src="" style="display: none;">
+        </div>
+    </div>
+    
+    <div id="trackTitle"></div>
+    <div id="trackArtist"></div>
+    
+    <div class="progress-container">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="time-display">
+            <span id="currentTime">0:00</span>
+            <span id="totalTime">0:00</span>
+        </div>
+    </div>
+    
+    <div class="volume-control">
+        <i class="fas fa-volume-down" id="volumeIcon"></i>
+        <div class="volume-slider">
+            <div class="volume-fill" id="volumeFill"></div>
+        </div>
+        <div class="volume-value" id="volumeValue">0%</div>
+    </div>
+</div>
+
+<div id="placeholder">
+    <i class="fas fa-music"></i> Ожидание музыки...
+</div>
+
+<script>
+    let ws = null;
+    let reconnectInterval;
+
+    function connect() {
+        const savedSettings = localStorage.getItem('yandexMusicSettings');
+        let settings = {
+            local: {
+                ip: '192.168.1.100',
+                wsPort: '3003',
+                token: 'yandex-music-token'
+            },
+            mode: 'local'
+        };
+ 
+        if (savedSettings) {
+            try {
+                const parsed = JSON.parse(savedSettings);
+                settings = { ...settings, ...parsed };
+            } catch (e) {
+                console.error("Ошибка парсинга настроек:", e);
+            }
+        }
+ 
+        let wsUrl;
+        if (settings.mode === 'mobile' && settings.mobile.url) {
+            wsUrl = settings.mobile.url.replace(/^http/, 'ws') + `?token=${settings.mobile.token}`;
+        } else {
+            wsUrl = `ws://${settings.local.ip}:${settings.local.wsPort}?token=${settings.local.token}`;
+        }
+ 
+        console.log(`Подключение к WebSocket: ${wsUrl}`);
+        ws = new WebSocket(wsUrl);
+ 
+        ws.onopen = () => {
+            console.log('Виджет подключен к серверу.');
+            clearInterval(reconnectInterval);
+        };
+ 
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.command === 'status' || data.track) {
+                updateWidget(data);
+            }
+        };
+ 
+        ws.onclose = () => {
+            console.log('Соединение с виджетом потеряно. Попытка переподключения...');
+            document.getElementById('playerContainer').style.display = 'none';
+            document.getElementById('placeholder').style.display = 'block';
+            
+            if (!reconnectInterval) reconnectInterval = setInterval(connect, 5000);
+        };
+ 
+        ws.onerror = (error) => {
+            console.error('Ошибка WebSocket виджета:', error);
+            ws.close();
+        };
+    }
+ 
+    function updateWidget(data) {
+        const track = data.track;
+        const time = data.time;
+        const volume = data.volume;
+        const playerContainer = document.getElementById('playerContainer');
+        const placeholder = document.getElementById('placeholder');
+ 
+        if (track && track.success && track.title) {
+            playerContainer.style.display = 'block';
+            placeholder.style.display = 'none';
+ 
+            // Информация о треке
+            document.getElementById('trackTitle').textContent = track.title;
+            document.getElementById('trackArtist').textContent = track.artist || '';
+            
+            const albumImage = document.getElementById('albumImage');
+            const albumPlaceholder = document.getElementById('albumPlaceholder');
+            if (track.coverUrl) {
+                if (albumImage.src !== track.coverUrl) {
+                    albumImage.src = track.coverUrl;
+                }
+                albumImage.style.display = 'block';
+                albumPlaceholder.style.display = 'none';
+            } else {
+                albumImage.style.display = 'none';
+                albumPlaceholder.style.display = 'flex';
+            }
+ 
+            // Прогресс-бар и время
+            if (time && time.success) {
+                document.getElementById('progressFill').style.width = `${time.percent || 0}%`;
+                document.getElementById('currentTime').textContent = time.currentTime || '0:00';
+                document.getElementById('totalTime').textContent = time.totalTime || '0:00';
+            }
+ 
+            // Громкость
+            if (volume && volume.success) {
+                const volumePercent = volume.percentage || 0;
+                document.getElementById('volumeFill').style.width = `${volumePercent}%`;
+                document.getElementById('volumeValue').textContent = `${volumePercent}%`;
+                
+                const volIcon = document.getElementById('volumeIcon');
+                if (volumePercent === 0) volIcon.className = 'fas fa-volume-off';
+                else if (volumePercent < 50) volIcon.className = 'fas fa-volume-down';
+                else volIcon.className = 'fas fa-volume-up';
+            }
+ 
+        } else {
+            playerContainer.style.display = 'none';
+            placeholder.style.display = 'block';
+        }
+    }
+ 
+    document.addEventListener('DOMContentLoaded', connect);
+</script>
+
+</body>
+</html>

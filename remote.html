@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎵 Управление Яндекс.Музыкой</title>
+    <link rel="stylesheet" href="public/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <!-- Шапка -->
+    <header class="header">
+        <div class="container">
+            <nav class="navbar">
+                <a href="/" class="logo">
+                    <i class="fas fa-music"></i>
+                    Яндекс.Музыка
+                </a>
+                <ul class="nav-menu">
+                    <li><a href="/remote.html" class="nav-link"><i class="fas fa-play-circle"></i> Управление</a></li>
+                    <li><a href="/mobile.html" class="nav-link"><i class="fas fa-mobile-alt"></i> Мобильная версия</a></li>
+                    <li><a href="/admin.html" class="nav-link"><i class="fas fa-cog"></i> Админ-панель</a></li>
+                    <li><a href="#features" class="nav-link"><i class="fas fa-star"></i> Возможности</a></li>
+                    <li><a href="#setup" class="nav-link"><i class="fas fa-download"></i> Установка</a></li>
+                </ul>
+                <button class="nav-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Герой-секция -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1 class="hero-title">Управляйте Яндекс.Музыкой из любой точки мира</h1>
+                    <p class="hero-subtitle">Мощный веб-интерфейс для управления музыкой на вашем компьютере с любого устройства</p>
+                    <div class="hero-buttons">
+                        <a href="/remote.html" class="btn btn-primary">
+                            <i class="fas fa-play"></i> Начать управление
+                        </a>
+                        <a href="#features" class="btn btn-secondary">
+                            <i class="fas fa-info-circle"></i> Узнать больше
+                        </a>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <div class="mockup">
+                        <div class="mockup-screen">
+                            <div class="player-preview">
+                                <div class="album-art-preview">
+                                    <i class="fas fa-music"></i>
+                                </div>
+                                <div class="track-info-preview">
+                                    <div class="track-title-preview">Трек не выбран</div>
+                                    <div class="track-artist-preview">Исполнитель не указан</div>
+                                </div>
+                                <div class="controls-preview">
+                                    <button class="control-btn-preview"><i class="fas fa-step-backward"></i></button>
+                                    <button class="control-btn-preview play-btn-preview"><i class="fas fa-play"></i></button>
+                                    <button class="control-btn-preview"><i class="fas fa-step-forward"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mockup-frame"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Возможности -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Возможности</h2>
+            <p class="section-subtitle">Все, что нужно для удобного управления музыкой</p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <h3 class="feature-title">Глобальный доступ</h3>
+                    <p class="feature-description">Управляйте музыкой из любой точки мира через интернет</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h3 class="feature-title">Мобильный интерфейс</h3>
+                    <p class="feature-description">Адаптивный дизайн для смартфонов и планшетов</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <h3 class="feature-title">QR коды</h3>
+                    <p class="feature-description">Быстрое подключение с помощью QR кодов</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3 class="feature-title">Мгновенный отклик</h3>
+                    <p class="feature-description">Команды выполняются практически мгновенно</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 class="feature-title">Безопасность</h3>
+                    <p class="feature-description">Защита токенами и настраиваемый доступ</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="feature-title">Статистика</h3>
+                    <p class="feature-description">Мониторинг подключений и использование</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Как это работает -->
+    <section class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">Как это работает</h2>
+            
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Запустите Яндекс.Музыку</h3>
+                        <p>Запустите Яндекс.Музыку на компьютере с параметрами для удаленного управления</p>
+                        <code class="code-block">--remote-debugging-port=9222 --remote-debugging-address=0.0.0.0</code>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Запустите сервер</h3>
+                        <p>Запустите наш сервер на том же компьютере</p>
+                        <code class="code-block">node server.js</code>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Подключитесь с устройства</h3>
+                        <p>Откройте этот сайт на любом устройстве в той же сети</p>
+                        <div class="qr-placeholder">
+                            <i class="fas fa-qrcode"></i>
+                            <span>Или отсканируйте QR код</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Управляйте музыкой</h3>
+                        <p>Используйте веб-интерфейс для управления музыкой</p>
+                        <div class="features-list">
+                            <span><i class="fas fa-play"></i> Воспроизведение</span>
+                            <span><i class="fas fa-forward"></i> Перемотка</span>
+                            <span><i class="fas fa-volume-up"></i> Громкость</span>
+                            <span><i class="fas fa-heart"></i> Лайки</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Быстрый старт -->
+    <section id="setup" class="setup">
+        <div class="container">
+            <h2 class="section-title">Быстрый старт</h2>
+            
+            <div class="setup-options">
+                <div class="setup-card">
+                    <div class="setup-header">
+                        <i class="fas fa-wifi"></i>
+                        <h3>Локальная сеть</h3>
+                    </div>
+                    <div class="setup-body">
+                        <ul class="setup-list">
+                            <li><i class="fas fa-check"></i> Быстрое подключение</li>
+                            <li><i class="fas fa-check"></i> Безопасность</li>
+                            <li><i class="fas fa-check"></i> Стабильность</li>
+                        </ul>
+                        <a href="/remote.html" class="btn btn-outline">
+                            <i class="fas fa-rocket"></i> Запустить
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="setup-card featured">
+                    <div class="setup-header">
+                        <i class="fas fa-globe"></i>
+                        <h3>Глобальный доступ</h3>
+                        <span class="badge">Рекомендуется</span>
+                    </div>
+                    <div class="setup-body">
+                        <ul class="setup-list">
+                            <li><i class="fas fa-check"></i> Доступ из любой точки мира</li>
+                            <li><i class="fas fa-check"></i> Мобильный интернет</li>
+                            <li><i class="fas fa-check"></i> QR коды для подключения</li>
+                        </ul>
+                        <a href="/admin.html" class="btn btn-primary">
+                            <i class="fas fa-cog"></i> Настроить
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="setup-card">
+                    <div class="setup-header">
+                        <i class="fas fa-mobile-alt"></i>
+                        <h3>Мобильное приложение</h3>
+                    </div>
+                    <div class="setup-body">
+                        <ul class="setup-list">
+                            <li><i class="fas fa-check"></i> Установка на телефон</li>
+                            <li><i class="fas fa-check"></i> Автономная работа</li>
+                            <li><i class="fas fa-check"></i> Push-уведомления</li>
+                        </ul>
+                        <a href="/mobile.html" class="btn btn-outline">
+                            <i class="fas fa-download"></i> Установить
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Демо -->
+    <section class="demo">
+        <div class="container">
+            <h2 class="section-title">Попробуйте демо</h2>
+            <p class="section-subtitle">Ознакомьтесь с интерфейсом прямо сейчас</p>
+            
+            <div class="demo-container">
+                <div class="demo-player">
+                    <div class="demo-album-art">
+                        <div class="vinyl-demo">
+                            <div class="vinyl-ring"></div>
+                            <div class="vinyl-center"></div>
+                        </div>
+                    </div>
+                    <div class="demo-controls">
+                        <button class="demo-control-btn"><i class="fas fa-step-backward"></i></button>
+                        <button class="demo-control-btn demo-play-btn"><i class="fas fa-play"></i></button>
+                        <button class="demo-control-btn"><i class="fas fa-step-forward"></i></button>
+                    </div>
+                    <div class="demo-volume">
+                        <i class="fas fa-volume-up"></i>
+                        <div class="demo-volume-slider">
+                            <div class="demo-volume-fill"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="demo-features">
+                    <h3>Доступные команды:</h3>
+                    <div class="demo-features-grid">
+                        <div class="demo-feature">
+                            <i class="fas fa-play"></i>
+                            <span>Play/Pause</span>
+                        </div>
+                        <div class="demo-feature">
+                            <i class="fas fa-forward"></i>
+                            <span>Next/Previous</span>
+                        </div>
+                        <div class="demo-feature">
+                            <i class="fas fa-volume-up"></i>
+                            <span>Volume Control</span>
+                        </div>
+                        <div class="demo-feature">
+                            <i class="fas fa-heart"></i>
+                            <span>Like/Dislike</span>
+                        </div>
+                        <div class="demo-feature">
+                            <i class="fas fa-list"></i>
+                            <span>Queue</span>
+                        </div>
+                        <div class="demo-feature">
+                            <i class="fas fa-search"></i>
+                            <span>Search</span>
+                        </div>
+                    </div>
+                    
+                    <a href="/remote.html" class="btn btn-primary btn-large">
+                        <i class="fas fa-external-link-alt"></i> Перейти к полной версии
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Подвал -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="logo">
+                        <i class="fas fa-music"></i>
+                        Яндекс.Музыка
+                    </div>
+                    <p class="footer-text">
+                        Веб-интерфейс для удаленного управления Яндекс.Музыкой
+                    </p>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Ссылки</h4>
+                    <ul class="footer-links">
+                        <li><a href="/remote.html">Управление</a></li>
+                        <li><a href="/mobile.html">Мобильная версия</a></li>
+                        <li><a href="/admin.html">Админ-панель</a></li>
+                        <li><a href="#setup">Установка</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Ресурсы</h4>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fab fa-github"></i> GitHub</a></li>
+                        <li><a href="#"><i class="fas fa-book"></i> Документация</a></li>
+                        <li><a href="#"><i class="fas fa-question-circle"></i> Помощь</a></li>
+                        <li><a href="#"><i class="fas fa-bug"></i> Сообщить о проблеме</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Контакты</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-vk"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-github"></i></a>
+                        <a href="#" class="social-link"><i class="fas fa-envelope"></i></a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2024 Управление Яндекс.Музыкой. Все права защищены.</p>
+                <p>Неофициальный проект. Яндекс.Музыка является товарным знаком ООО "Яндекс".</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Скрипты -->
+    <script src="public/js/app.js"></script>
+    <script>
+        // Анимация демо
+        document.addEventListener('DOMContentLoaded', () => {
+            // Анимация виниловой пластинки
+            const vinyl = document.querySelector('.vinyl-demo');
+            if (vinyl) {
+                vinyl.style.animation = 'spin 20s linear infinite';
+            }
+            
+            // Имитация управления
+            const demoBtn = document.querySelector('.demo-play-btn');
+            if (demoBtn) {
+                let isPlaying = false;
+                demoBtn.addEventListener('click', () => {
+                    isPlaying = !isPlaying;
+                    demoBtn.innerHTML = isPlaying ? 
+                        '<i class="fas fa-pause"></i>' : 
+                        '<i class="fas fa-play"></i>';
+                });
+            }
+            
+            // Навигационное меню для мобильных
+            const navToggle = document.querySelector('.nav-toggle');
+            const navMenu = document.querySelector('.nav-menu');
+            
+            if (navToggle && navMenu) {
+                navToggle.addEventListener('click', () => {
+                    navMenu.classList.toggle('active');
+                });
+            }
+            
+            // Плавная прокрутка
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+                    
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
