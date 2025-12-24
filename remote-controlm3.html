@@ -1,0 +1,2861 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>🎵 Яндекс.Музыка - Мобильное управление</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Добавляем библиотеку для сканирования QR -->
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@latest/minified/html5-qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary: #FF3333;
+            --secondary: #333333;
+            --accent: #00BFFF;
+            --mobile-accent: #9C27B0;
+            --dark: #121212;
+            --darker: #0a0a0a;
+            --light: #ffffff;
+            --gray: #888888;
+            --success: #00CC66;
+            --warning: #FF9900;
+            --danger: #FF3333;
+            --card-bg: rgba(30, 30, 30, 0.95);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --mobile-bg: linear-gradient(135deg, #0d1b2a 0%, #1b3a4b 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--mobile-bg);
+            color: var(--light);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            padding: 0;
+            overscroll-behavior: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Модальное окно сканера QR */
+        .qr-scanner-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-scanner-modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .qr-scanner-header {
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            background: rgba(20, 20, 20, 0.9);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .qr-scanner-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--light);
+            margin-bottom: 10px;
+        }
+
+        .qr-scanner-subtitle {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .qr-scanner-container {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #qr-reader {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        #qr-reader__scan_region {
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        #qr-reader__dashboard {
+            padding: 20px;
+            background: rgba(30, 30, 30, 0.9);
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .qr-scanner-instructions {
+            background: rgba(30, 30, 30, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .qr-scanner-instructions h3 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+
+        .qr-scanner-instructions ul {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .qr-scanner-instructions li {
+            margin-bottom: 10px;
+            color: var(--gray);
+            line-height: 1.5;
+        }
+
+        .qr-scanner-buttons {
+            display: flex;
+            gap: 15px;
+            padding: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .qr-scanner-btn {
+            flex: 1;
+            padding: 18px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .qr-scanner-btn-primary {
+            background: linear-gradient(135deg, var(--primary), #ff5555);
+            color: var(--light);
+        }
+
+        .qr-scanner-btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .qr-scanner-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Индикатор сканирования */
+        .qr-scan-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px;
+            height: 250px;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .qr-scan-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 3px solid var(--accent);
+            border-radius: 20px;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.8);
+        }
+
+        .qr-scan-line {
+            position: absolute;
+            top: 0;
+            left: 20px;
+            right: 20px;
+            height: 3px;
+            background: var(--accent);
+            animation: scanLine 2s infinite linear;
+        }
+
+        @keyframes scanLine {
+
+            0%,
+            100% {
+                top: 0;
+            }
+
+            50% {
+                top: calc(100% - 3px);
+            }
+        }
+
+        /* Стили для результата сканирования */
+        .qr-result {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 90%;
+            width: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            z-index: 10001;
+            display: none;
+        }
+
+        .qr-result.active {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        .qr-result-content {
+            text-align: center;
+        }
+
+        .qr-result-icon {
+            font-size: 48px;
+            color: var(--success);
+            margin-bottom: 15px;
+        }
+
+        .qr-result-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .qr-result-data {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            word-break: break-all;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .qr-result-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* Кнопка сканера QR в интерфейсе */
+        .qr-scanner-btn-small {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 15px;
+            background: rgba(0, 191, 255, 0.1);
+            border: 1px solid rgba(0, 191, 255, 0.3);
+            border-radius: 10px;
+            color: var(--accent);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .qr-scanner-btn-small:hover {
+            background: rgba(0, 191, 255, 0.2);
+        }
+
+        .qr-scanner-btn-small:active {
+            transform: scale(0.95);
+        }
+
+        /* Обновляем стили для вкладки мобильного интернета */
+        .qr-container {
+            position: relative;
+        }
+
+        .qr-scan-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 100;
+        }
+
+        /* Мобильная навигация */
+        .mobile-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(20, 20, 20, 0.98);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            display: none;
+            padding: 10px 0;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .mobile-nav-items {
+            display: flex;
+            justify-content: space-around;
+            padding: 0 10px;
+        }
+
+        .mobile-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--gray);
+            text-decoration: none;
+            font-size: 0.75rem;
+            padding: 8px 12px;
+            border-radius: 15px;
+            transition: all 0.3s;
+            flex: 1;
+            margin: 0 2px;
+        }
+
+        .mobile-nav-item.active {
+            color: var(--mobile-accent);
+            background: rgba(156, 39, 176, 0.15);
+        }
+
+        .mobile-nav-item i {
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 15px;
+            padding-bottom: 80px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 20px 15px;
+            background: rgba(18, 18, 18, 0.95);
+            backdrop-filter: blur(20px);
+            margin: -15px -15px 15px -15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .logo-icon {
+            font-size: 36px;
+            color: var(--primary);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .subtitle {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .network-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 191, 255, 0.15);
+            color: var(--accent);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 10px;
+            border: 1px solid rgba(0, 191, 255, 0.3);
+        }
+
+        .mobile-badge {
+            background: rgba(156, 39, 176, 0.15);
+            color: var(--mobile-accent);
+            border-color: rgba(156, 39, 176, 0.3);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s;
+        }
+
+        .card:active {
+            transform: scale(0.98);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, rgba(0, 191, 255, 0.1), rgba(255, 51, 51, 0.1));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: var(--accent);
+        }
+
+        .mobile-icon {
+            background: rgba(156, 39, 176, 0.1);
+            color: var(--mobile-accent);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--light);
+        }
+
+        /* Status */
+        .status-display {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .status-visual {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+
+        .status-circle {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-circle::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: conic-gradient(var(--dark) 0%, var(--dark) 100%);
+            transition: background 1s ease;
+        }
+
+        .status-circle.connected::before {
+            background: conic-gradient(var(--success) 0%, var(--success) 100%);
+            animation: rotate 3s linear infinite;
+        }
+
+        .status-circle::after {
+            content: '';
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            background: var(--dark);
+            border-radius: 50%;
+            top: 10%;
+            left: 10%;
+            z-index: 1;
+        }
+
+        .status-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.6rem;
+            font-weight: 900;
+            z-index: 2;
+            color: var(--light);
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 18px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #ff5555);
+            color: var(--light);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--light);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-mobile {
+            background: linear-gradient(135deg, var(--mobile-accent), #ba68c8);
+            color: var(--light);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #00dd77);
+            color: var(--light);
+        }
+
+        /* Player */
+        .player-content {
+            text-align: center;
+        }
+
+        .album-art-container {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 0 auto 25px;
+        }
+
+        .album-art {
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            position: relative;
+        }
+
+        .album-art::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, rgba(255, 51, 51, 0.2), rgba(0, 191, 255, 0.2));
+            z-index: 1;
+            mix-blend-mode: overlay;
+        }
+
+        .album-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .album-art:hover .album-image {
+            transform: scale(1.05);
+        }
+
+        .album-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            color: rgba(255, 255, 255, 0.1);
+        }
+
+        .vinyl-effect {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%;
+            height: 70%;
+            border-radius: 50%;
+            background: conic-gradient(#000, #111, #222, #333, #222, #111, #000);
+            animation: spin 20s linear infinite;
+            opacity: 0.1;
+            display: none;
+        }
+
+        .player-playing .vinyl-effect {
+            display: block;
+        }
+
+        .track-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            line-height: 1.3;
+            color: var(--light);
+            padding: 0 10px;
+        }
+
+        .track-artist {
+            font-size: 1.3rem;
+            color: var(--accent);
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+
+        .progress-container {
+            margin: 25px 0;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            right: -5px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            background: var(--light);
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .progress-bar:hover::after {
+            opacity: 1;
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            color: var(--gray);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .volume-icon {
+            font-size: 24px;
+            color: var(--accent);
+            width: 40px;
+        }
+
+        .volume-slider-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        input[type="range"].volume-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            position: relative;
+            cursor: pointer;
+            outline: none;
+        }
+
+        input[type="range"].volume-slider::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent) var(--volume-percent, 70%), rgba(255, 255, 255, 0.1) var(--volume-percent, 70%), rgba(255, 255, 255, 0.1) 100%);
+            border-radius: 3px;
+        }
+
+        input[type="range"].volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--light);
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -6px;
+            /* (thumb height - track height) / 2 */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="range"].volume-slider::-moz-range-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent) var(--volume-percent, 70%), rgba(255, 255, 255, 0.1) var(--volume-percent, 70%), rgba(255, 255, 255, 0.1) 100%);
+            border-radius: 3px;
+        }
+
+        input[type="range"].volume-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: var(--light);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="range"].volume-slider::-ms-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: transparent;
+            border-color: transparent;
+            color: transparent;
+        }
+
+        .volume-value {
+            min-width: 60px;
+            text-align: right;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--light);
+        }
+
+        /* Controls */
+        .controls-main {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .control-btn {
+            aspect-ratio: 1;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .control-btn:active {
+            transform: scale(0.9);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .control-btn.play-btn {
+            background: linear-gradient(135deg, var(--primary), #ff6666);
+            border: none;
+            font-size: 2.5rem;
+        }
+
+        /* Secondary Controls */
+        .controls-secondary {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .secondary-btn {
+            padding: 20px 10px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .secondary-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .secondary-btn i {
+            font-size: 1.8rem;
+        }
+
+        /* Settings */
+        .connection-settings {
+            background: rgba(15, 15, 15, 0.95);
+        }
+
+        .connection-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 5px;
+        }
+
+        .connection-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .connection-tab.active {
+            background: rgba(0, 191, 255, 0.2);
+            color: var(--accent);
+        }
+
+        .connection-tab.mobile-active {
+            background: rgba(156, 39, 176, 0.2);
+            color: var(--mobile-accent);
+        }
+
+        .connection-form {
+            display: none;
+        }
+
+        .connection-form.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--gray);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            color: var(--light);
+            font-size: 1.1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0, 191, 255, 0.2);
+        }
+
+        .form-input.mobile-input:focus {
+            border-color: var(--mobile-accent);
+            box-shadow: 0 0 0 2px rgba(156, 39, 176, 0.2);
+        }
+
+        .form-help {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+
+        .qr-container {
+            text-align: center;
+            margin: 25px 0;
+            padding: 25px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            position: relative;
+        }
+
+        .qr-code {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .qr-code img {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Connection Info */
+        .connection-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            margin-top: 25px;
+        }
+
+        .connection-detail {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .detail-value {
+            font-weight: 800;
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+            color: var(--light);
+        }
+
+        .detail-label {
+            color: var(--gray);
+            font-size: 0.8rem;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            padding: 20px;
+            border-radius: 20px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            max-width: 90%;
+            width: auto;
+            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .notification.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .notification.success {
+            border-left: 5px solid var(--success);
+        }
+
+        .notification.error {
+            border-left: 5px solid var(--danger);
+        }
+
+        .notification.warning {
+            border-left: 5px solid var(--warning);
+        }
+
+        .notification.mobile {
+            border-left: 5px solid var(--mobile-accent);
+        }
+
+        .notification-icon {
+            font-size: 24px;
+        }
+
+        .notification-text {
+            flex: 1;
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+
+        /* Loading */
+        .loading {
+            position: relative;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .mobile-loading::after {
+            border-top-color: var(--mobile-accent);
+        }
+
+        /* Hidden */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Swipe Area */
+        .swipe-area {
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Battery Saver */
+        .battery-saver {
+            opacity: 0.9;
+            filter: brightness(0.8);
+        }
+
+        /* Анимации */
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .mobile-nav {
+                display: block;
+            }
+
+            .album-art-container {
+                width: 180px;
+                height: 180px;
+            }
+
+            .controls-main {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+            }
+
+            .control-btn {
+                font-size: 1.8rem;
+            }
+
+            .controls-secondary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .qr-scan-indicator {
+                width: 200px;
+                height: 200px;
+            }
+
+            .qr-scanner-buttons {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .title {
+                font-size: 1.6rem;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .button-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .controls-main {
+                gap: 10px;
+            }
+
+            .control-btn {
+                font-size: 1.6rem;
+            }
+
+            .album-art-container {
+                width: 160px;
+                height: 160px;
+            }
+
+            .qr-code {
+                width: 180px;
+                height: 180px;
+            }
+
+            .qr-scan-indicator {
+                width: 180px;
+                height: 180px;
+            }
+        }
+
+        /* Portrait */
+        @media (orientation: portrait) {
+            .container {
+                margin-bottom: 80px;
+            }
+        }
+
+        /* Landscape */
+        @media (orientation: landscape) and (max-height: 600px) {
+            .header {
+                position: relative;
+                padding: 15px;
+            }
+
+            .container {
+                margin-bottom: 20px;
+            }
+
+            .mobile-nav {
+                display: none;
+            }
+        }
+
+        /* PWA Support */
+        @media (display-mode: standalone) {
+            body {
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+
+            .header {
+                padding-top: calc(20px + env(safe-area-inset-top));
+            }
+
+            .mobile-nav {
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+        }
+
+        /* Dark Theme */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #000;
+            }
+
+            .card {
+                background: rgba(25, 25, 25, 0.95);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Notification -->
+    <div id="notification" class="notification">
+        <i class="notification-icon" id="notificationIcon"></i>
+        <div class="notification-text" id="notificationText"></div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div id="qrScannerModal" class="qr-scanner-modal">
+        <div class="qr-scanner-header">
+            <h2 class="qr-scanner-title">📷 Сканирование QR кода</h2>
+            <div class="qr-scanner-subtitle">Наведите камеру на QR код сервера</div>
+        </div>
+
+        <div class="qr-scanner-container">
+            <div id="qr-reader"></div>
+            <div class="qr-scan-indicator">
+                <div class="qr-scan-frame"></div>
+                <div class="qr-scan-line"></div>
+            </div>
+        </div>
+
+        <div class="qr-scanner-instructions">
+            <h3>Как сканировать:</h3>
+            <ul>
+                <li>Разрешите доступ к камере</li>
+                <li>Наведите камеру на QR код</li>
+                <li>Держите телефон устойчиво</li>
+                <li>Убедитесь, что QR код хорошо освещен</li>
+            </ul>
+        </div>
+
+        <div class="qr-scanner-buttons">
+            <button class="qr-scanner-btn qr-scanner-btn-secondary" onclick="closeQRScanner()">
+                <i class="fas fa-times"></i>
+                Отмена
+            </button>
+            <button class="qr-scanner-btn qr-scanner-btn-primary" onclick="toggleCamera()" id="cameraToggleBtn">
+                <i class="fas fa-camera"></i>
+                Камера: Задняя
+            </button>
+        </div>
+    </div>
+
+    <!-- QR Result Modal -->
+    <div id="qrResult" class="qr-result">
+        <div class="qr-result-content">
+            <div class="qr-result-icon" id="qrResultIcon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="qr-result-title" id="qrResultTitle">QR код распознан!</div>
+            <div class="qr-result-subtitle" id="qrResultSubtitle">Настройки сервера обнаружены</div>
+            <div class="qr-result-data" id="qrResultData"></div>
+            <div class="qr-result-buttons">
+                <button class="qr-scanner-btn qr-scanner-btn-secondary" onclick="closeQRResult()">
+                    <i class="fas fa-times"></i>
+                    Закрыть
+                </button>
+                <button class="qr-scanner-btn qr-scanner-btn-primary" onclick="applyQRSettings()">
+                    <i class="fas fa-check"></i>
+                    Применить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo-container">
+            <i class="fas fa-music logo-icon"></i>
+            <div>
+                <h1 class="title">Яндекс.Музыка</h1>
+                <div class="subtitle">Управление с мобильного</div>
+            </div>
+        </div>
+        <div class="network-badge" id="networkBadge">
+            <i class="fas fa-wifi"></i>
+            <span id="networkType">Локальная сеть</span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Status Card -->
+        <section class="card" id="statusCard">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-network-wired"></i>
+                </div>
+                <h2 class="card-title">Статус подключения</h2>
+            </div>
+
+            <div class="status-display">
+                <div class="status-visual">
+                    <div class="status-circle" id="statusCircle">
+                        <div class="status-text" id="statusText">OFF</div>
+                    </div>
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-size: 1.4rem; font-weight: 800; margin-bottom: 8px;" id="statusLabel">
+                        Не подключено
+                    </div>
+                    <div style="color: #aaa; font-size: 0.95rem;" id="statusMessage">
+                        Выберите тип подключения
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-grid">
+                <button class="btn btn-primary" onclick="connectToServer()" id="connectBtn">
+                    <i class="fas fa-plug"></i>
+                    Подключиться
+                </button>
+                <button class="btn btn-secondary" onclick="showConnectionSettings()" id="settingsBtn">
+                    <i class="fas fa-cog"></i>
+                    Настройки
+                </button>
+                <button class="btn btn-mobile" onclick="toggleMobileMode()" id="mobileModeBtn">
+                    <i class="fas fa-mobile-alt"></i>
+                    Мобильный режим
+                </button>
+                <button class="btn btn-secondary" onclick="refreshStatus()">
+                    <i class="fas fa-redo"></i>
+                    Обновить
+                </button>
+            </div>
+        </section>
+
+        <!-- Player Card -->
+        <section class="card" id="playerCard" style="display: none;">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <h2 class="card-title">Сейчас играет</h2>
+            </div>
+
+            <div class="player-content">
+                <div class="album-art-container">
+                    <div class="album-art">
+                        <div class="vinyl-effect"></div>
+                        <div class="album-placeholder" id="albumPlaceholder">
+                            <i class="fas fa-music"></i>
+                        </div>
+                        <img id="albumImage" class="album-image hidden" alt="Обложка">
+                    </div>
+                </div>
+
+                <div class="track-title" id="trackTitle">Трек не выбран</div>
+                <div class="track-artist" id="trackArtist">Исполнитель не указан</div>
+
+                <div class="progress-container">
+                    <div class="progress-bar" onclick="seekTrack(event)">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="time-display">
+                        <span id="currentTime">0:00</span>
+                        <span id="totalTime">0:00</span>
+                    </div>
+                </div>
+
+                <div class="volume-control">
+                    <button class="control-btn" onclick="changeVolume(-10)" title="Тише"
+                        style="aspect-ratio: auto; width: 44px; height: 44px; font-size: 1rem;">
+                        <i class="fas fa-volume-down"></i>
+                    </button>
+                    <input
+                        class="JkKcxRVvjK7lcakkEliC qpvIbN4_hF6CqK0bjCq7 SHvrm0VRiLVwGqJJjNO8 undefined ChangeVolume_slider__fCKGZ ChangeVolume_important__ZIYpu"
+                        type="range" max="1"
+                        style="background-size: 70% 100%; --seek-before-width: 70%; --buffered-width: 100%; flex-grow: 1;"
+                        step="0.01" aria-label="Управление громкостью" value="0.70" id="volumeSlider">
+                    <div class="volume-value" id="volumeValue">70%</div>
+                    <button class="control-btn" onclick="changeVolume(10)" title="Громче"
+                        style="aspect-ratio: auto; width: 44px; height: 44px; font-size: 1rem;">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>
+            </div>
+    </div>
+    </section>
+
+    <!-- Controls Card -->
+    <section class="card" id="controlsCard" style="display: none;">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="fas fa-gamepad"></i>
+            </div>
+            <h2 class="card-title">Управление</h2>
+        </div>
+
+        <div class="controls-main">
+            <button class="control-btn" onclick="sendCommand('previous')" title="Предыдущий">
+                <i class="fas fa-step-backward"></i>
+            </button>
+            <button class="control-btn play-btn" onclick="sendCommand('toggle')" id="playPauseBtn">
+                <i class="fas fa-play" id="playIcon"></i>
+            </button>
+            <button class="control-btn" onclick="sendCommand('next')" title="Следующий">
+                <i class="fas fa-step-forward"></i>
+            </button>
+
+            <button class="control-btn" onclick="sendCommand('like')" id="likeBtn" title="Лайк">
+                <i class="far fa-heart" id="likeIcon"></i>
+            </button>
+            <button class="control-btn" onclick="changeVolume(-10)" title="Тише">
+                <i class="fas fa-volume-down"></i>
+            </button>
+            <button class="control-btn" onclick="changeVolume(10)" title="Громче">
+                <i class="fas fa-volume-up"></i>
+            </button>
+        </div>
+
+        <div class="controls-secondary">
+            <button class="secondary-btn" onclick="sendCommand('mute')" id="muteBtn">
+                <i class="fas fa-volume-mute" id="muteIcon"></i>
+                <span id="muteText">Звук</span>
+            </button>
+            <button class="secondary-btn" onclick="showSeekDialog()">
+                <i class="fas fa-forward"></i>
+                <span>Перемотка</span>
+            </button>
+            <button class="secondary-btn" onclick="showLyrics()">
+                <i class="fas fa-scroll"></i>
+                <span>Текст песни</span>
+            </button>
+            <button class="secondary-btn" onclick="showQueue()">
+                <i class="fas fa-list"></i>
+                <span>Очередь</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- Settings Card -->
+    <section class="card connection-settings" id="settingsCard" style="display: none;">
+        <div class="card-header">
+            <div class="card-icon mobile-icon">
+                <i class="fas fa-signal"></i>
+            </div>
+            <h2 class="card-title">Настройки подключения</h2>
+            <div class="qr-scan-button">
+                <button class="qr-scanner-btn-small" onclick="openQRScanner()">
+                    <i class="fas fa-qrcode"></i>
+                    Сканировать QR
+                </button>
+            </div>
+        </div>
+
+        <div class="connection-tabs">
+            <div class="connection-tab active" onclick="showTab('local')">
+                Локальная сеть
+            </div>
+            <div class="connection-tab" onclick="showTab('mobile')">
+                Мобильный интернет
+            </div>
+        </div>
+
+        <!-- Local Network -->
+        <div id="localTab" class="connection-form active">
+            <div class="form-group">
+                <label class="form-label">IP адрес сервера</label>
+                <input type="text" class="form-input" id="localIp" value="192.168.1.100" placeholder="Введите IP адрес">
+                <div class="form-help">
+                    IP адрес компьютера с Яндекс.Музыкой в локальной сети
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">HTTP порт</label>
+                <input type="number" class="form-input" id="localHttpPort" value="3002" min="1" max="65535">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">WebSocket порт</label>
+                <input type="number" class="form-input" id="localWsPort" value="3003" min="1" max="65535">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Токен авторизации</label>
+                <input type="text" class="form-input" id="localToken" value="yandex-music-token">
+            </div>
+
+            <div class="button-grid">
+                <button class="btn btn-primary" onclick="saveLocalSettings()">
+                    <i class="fas fa-save"></i>
+                    Сохранить
+                </button>
+                <button class="btn btn-secondary" onclick="scanLocalNetwork()">
+                    <i class="fas fa-search"></i>
+                    Найти сервер
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Internet -->
+        <div id="mobileTab" class="connection-form">
+            <div class="form-group">
+                <label class="form-label">Публичный URL сервера</label>
+                <input type="url" class="form-input mobile-input" id="mobileUrl"
+                    placeholder="https://ваш-домен.com или http://ваш-ip:порт">
+                <div class="form-help">
+                    Для работы через мобильный интернет нужен публичный IP или домен
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Токен авторизации</label>
+                <input type="text" class="form-input mobile-input" id="mobileToken" value="yandex-music-token">
+            </div>
+
+            <div class="qr-container">
+                <div class="qr-code" id="qrCode">
+                    <!-- QR код будет сгенерирован динамически -->
+                    <div style="text-align: center; padding: 50px; color: #666;">
+                        QR код для быстрого подключения
+                    </div>
+                </div>
+                <div style="color: #aaa; font-size: 0.9rem;">
+                    Отсканируйте QR код для быстрой настройки
+                </div>
+            </div>
+
+            <div class="button-grid">
+                <button class="btn btn-mobile" onclick="saveMobileSettings()">
+                    <i class="fas fa-mobile-alt"></i>
+                    Подключить
+                </button>
+                <button class="btn btn-secondary" onclick="generateQRCode()">
+                    <i class="fas fa-qrcode"></i>
+                    Обновить QR
+                </button>
+            </div>
+        </div>
+
+        <!-- Connection Info -->
+        <div class="connection-info" id="connectionInfo">
+            <div class="connection-detail">
+                <div class="detail-value" id="pingValue">-</div>
+                <div class="detail-label">Пинг</div>
+            </div>
+            <div class="connection-detail">
+                <div class="detail-value" id="speedValue">-</div>
+                <div class="detail-label">Скорость</div>
+            </div>
+            <div class="connection-detail">
+                <div class="detail-value" id="batteryValue">-</div>
+                <div class="detail-label">Батарея</div>
+            </div>
+        </div>
+    </section>
+    </div>
+
+    <!-- Mobile Navigation -->
+    <nav class="mobile-nav">
+        <div class="mobile-nav-items">
+            <a href="javascript:void(0)" class="mobile-nav-item active" onclick="showSection('status')">
+                <i class="fas fa-home"></i>
+                Статус
+            </a>
+            <a href="javascript:void(0)" class="mobile-nav-item" onclick="showSection('player')">
+                <i class="fas fa-music"></i>
+                Плеер
+            </a>
+            <a href="javascript:void(0)" class="mobile-nav-item" onclick="showSection('controls')">
+                <i class="fas fa-gamepad"></i>
+                Управление
+            </a>
+            <a href="javascript:void(0)" class="mobile-nav-item" onclick="showSection('settings')">
+                <i class="fas fa-cog"></i>
+                Настройки
+            </a>
+        </div>
+    </nav>
+
+    <script>
+        // Конфигурация
+        const CONFIG = {
+            MODES: {
+                LOCAL: 'local',
+                MOBILE: 'mobile'
+            },
+
+            DEFAULT_SETTINGS: {
+                mode: 'local',
+                local: {
+                    ip: '192.168.1.100',
+                    httpPort: '3002',
+                    wsPort: '3003',
+                    token: 'yandex-music-token'
+                },
+                mobile: {
+                    url: '',
+                    token: 'yandex-music-token'
+                }
+            },
+
+            PERFORMANCE: {
+                updateInterval: 2000,
+                reconnectDelay: 3000,
+                pingInterval: 5000,
+                mobileDataSaver: false
+            }
+        };
+
+        // Глобальные переменные
+        let ws = null;
+        let statusInterval = null;
+        let pingInterval = null;
+        let currentMode = CONFIG.MODES.LOCAL;
+        let isConnected = false;
+        let currentSettings = { ...CONFIG.DEFAULT_SETTINGS };
+        let mobileMode = true; // По умолчанию мобильный режим
+        let batteryLevel = null;
+        let networkType = 'unknown';
+        let currentStatus = null;
+        let playerIsPlaying = false;
+
+        // Переменные для сканера QR
+        let html5QrCode = null;
+        let currentCameraId = null;
+        let cameraFacingMode = 'environment'; // environment = задняя камера, user = передняя
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📱 Яндекс.Музыка - Мобильное управление загружено');
+
+            // Определяем мобильное устройство
+            detectDeviceType();
+
+            // Загружаем настройки
+            loadSettings();
+
+            // Настраиваем мониторинг
+            setupMonitoring();
+
+            // Настраиваем жесты
+            setupGestures();
+
+            // Настраиваем горячие клавиши
+            setupHotkeys();
+
+            // Проверяем PWA
+            checkPWA();
+
+            // Обновляем бейдж сети
+            updateNetworkBadge();
+
+            // Генерируем QR код
+            generateQRCode();
+
+            // Автоподключение
+            setTimeout(() => {
+                if (currentSettings.mode === CONFIG.MODES.LOCAL) {
+                    connectToServer();
+                }
+            }, 1000);
+
+            // Инициализируем сканер QR
+            initQRScanner();
+        });
+
+        // Обработчики для нового слайдера громкости
+        document.addEventListener('DOMContentLoaded', () => {
+            const volumeSlider = document.getElementById('volumeSlider');
+            if (volumeSlider) {
+                volumeSlider.addEventListener('input', (event) => {
+                    const volumePercent = Math.round(parseFloat(event.target.value) * 100);
+                    sendCommand('volume', volumePercent);
+                });
+            }
+        });
+
+        // Инициализация сканера QR
+        function initQRScanner() {
+            html5QrCode = new Html5Qrcode("qr-reader");
+
+            // Настраиваем сканер
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                rememberLastUsedCamera: true,
+                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+            };
+
+            // Проверяем поддержку камеры
+            if (!Html5Qrcode.getCameras) {
+                console.warn('HTML5 QR Code Scanner не поддерживается');
+                return;
+            }
+
+            // Получаем список камер
+            Html5Qrcode.getCameras()
+                .then(cameras => {
+                    if (cameras && cameras.length) {
+                        console.log(`📷 Найдено ${cameras.length} камер`);
+
+                        // Определяем заднюю камеру для мобильных устройств
+                        cameras.forEach(camera => {
+                            if (camera.label.toLowerCase().includes('back') ||
+                                camera.label.toLowerCase().includes('rear') ||
+                                camera.label.toLowerCase().includes('environment')) {
+                                currentCameraId = camera.id;
+                            }
+                        });
+
+                        // Если задняя камера не найдена, используем первую
+                        if (!currentCameraId && cameras.length > 0) {
+                            currentCameraId = cameras[0].id;
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('Ошибка получения камер:', err);
+                });
+        }
+
+        // Открытие сканера QR
+        function openQRScanner() {
+            if (!html5QrCode) {
+                showNotification('❌ Сканер QR не инициализирован', 'error');
+                return;
+            }
+
+            document.getElementById('qrScannerModal').classList.add('active');
+
+            // Запускаем сканирование
+            if (currentCameraId) {
+                startQRScanning();
+            } else {
+                // Если камера не определена, получаем список камер
+                Html5Qrcode.getCameras()
+                    .then(cameras => {
+                        if (cameras && cameras.length) {
+                            currentCameraId = cameras[0].id;
+                            startQRScanning();
+                        } else {
+                            showNotification('❌ Камера не найдена', 'error');
+                            closeQRScanner();
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Ошибка получения камер:', err);
+                        showNotification('❌ Не удалось получить доступ к камере', 'error');
+                        closeQRScanner();
+                    });
+            }
+        }
+
+        // Запуск сканирования QR
+        function startQRScanning() {
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                rememberLastUsedCamera: true,
+                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+            };
+
+            html5QrCode.start(
+                currentCameraId,
+                config,
+                onQRScanSuccess,
+                onQRScanError
+            ).catch(err => {
+                console.error('Ошибка запуска сканирования:', err);
+                showNotification('❌ Не удалось запустить камеру', 'error');
+            });
+        }
+
+        // Обработка успешного сканирования QR
+        function onQRScanSuccess(decodedText, decodedResult) {
+            console.log('✅ QR код распознан:', decodedText);
+
+            // Останавливаем сканирование
+            html5QrCode.stop();
+
+            // Закрываем сканер
+            document.getElementById('qrScannerModal').classList.remove('active');
+
+            // Показываем результат
+            showQRResult(decodedText);
+        }
+
+        // Обработка ошибок сканирования
+        function onQRScanError(errorMessage) {
+            // Игнорируем обычные ошибки сканирования
+            // console.log('QR scan error:', errorMessage);
+        }
+
+        // Показать результат сканирования QR
+        function showQRResult(qrData) {
+            try {
+                // Пытаемся распарсить JSON из QR кода
+                const config = JSON.parse(qrData);
+
+                document.getElementById('qrResultData').textContent = qrData;
+                document.getElementById('qrResultTitle').textContent = 'QR код распознан!';
+                document.getElementById('qrResultSubtitle').textContent = 'Настройки сервера обнаружены';
+                document.getElementById('qrResultIcon').innerHTML = '<i class="fas fa-check-circle"></i>';
+
+                // Сохраняем данные QR кода для использования
+                window.qrConfigData = config;
+
+                document.getElementById('qrResult').classList.add('active');
+
+                // Вибрация при успешном сканировании
+                if (mobileMode && 'vibrate' in navigator) {
+                    navigator.vibrate([100, 50, 100]);
+                }
+
+            } catch (err) {
+                // Если не JSON, пробуем распарсить как URL
+                console.log('Не JSON, пытаемся распарсить как URL:', qrData);
+
+                document.getElementById('qrResultData').textContent = qrData;
+                document.getElementById('qrResultTitle').textContent = 'Ссылка распознана';
+                document.getElementById('qrResultSubtitle').textContent = 'Обнаружен URL сервера';
+                document.getElementById('qrResultIcon').innerHTML = '<i class="fas fa-link"></i>';
+
+                // Сохраняем как URL
+                window.qrConfigData = { url: qrData };
+
+                document.getElementById('qrResult').classList.add('active');
+
+                // Вибрация
+                if (mobileMode && 'vibrate' in navigator) {
+                    navigator.vibrate(100);
+                }
+            }
+        }
+
+        // Применить настройки из QR кода
+        function applyQRSettings() {
+            if (!window.qrConfigData) return;
+
+            const config = window.qrConfigData;
+
+            if (config.type === 'yandex-music-remote') {
+                // Это конфигурация сервера
+                if (config.mode === 'local' || config.server && config.server.http) {
+                    const serverUrl = config.server.http || config.server;
+
+                    // Определяем тип подключения
+                    if (serverUrl.includes('localhost') || serverUrl.includes('192.168.') || serverUrl.includes('10.') || serverUrl.includes('172.')) {
+                        // Локальная сеть
+                        showTab('local');
+
+                        // Извлекаем IP и порт из URL
+                        const urlParts = serverUrl.replace(/^https?:\/\//, '').split(':');
+                        const ip = urlParts[0];
+                        const port = urlParts[1] || '3002';
+
+                        document.getElementById('localIp').value = ip;
+                        document.getElementById('localHttpPort').value = port;
+                        document.getElementById('localWsPort').value = config.server.ws ? config.server.ws.split(':').pop() : '3003';
+                        document.getElementById('localToken').value = config.server.token || config.token || 'yandex-music-token';
+
+                        showNotification('✅ Настройки локальной сети загружены', 'success');
+                    } else {
+                        // Мобильный интернет
+                        showTab('mobile');
+                        document.getElementById('mobileUrl').value = serverUrl;
+                        document.getElementById('mobileToken').value = config.server.token || config.token || 'yandex-music-token';
+
+                        showNotification('✅ Настройки мобильного интернета загружены', 'mobile');
+                    }
+
+                    closeQRResult();
+
+                    // Автоматически подключаемся
+                    setTimeout(() => {
+                        if (config.mode === 'local') {
+                            saveLocalSettings();
+                        } else {
+                            saveMobileSettings();
+                        }
+                    }, 500);
+                }
+            } else if (config.url) {
+                // Простой URL
+                if (config.url.includes('localhost') || config.url.includes('192.168.') || config.url.includes('10.') || config.url.includes('172.')) {
+                    // Локальная сеть
+                    showTab('local');
+
+                    const urlParts = config.url.replace(/^https?:\/\//, '').split(':');
+                    const ip = urlParts[0];
+                    const port = urlParts[1] || '3002';
+
+                    document.getElementById('localIp').value = ip;
+                    document.getElementById('localHttpPort').value = port;
+                    document.getElementById('localWsPort').value = '3003';
+                    document.getElementById('localToken').value = 'yandex-music-token';
+
+                    showNotification('✅ URL локального сервера загружен', 'success');
+                } else {
+                    // Мобильный интернет
+                    showTab('mobile');
+                    document.getElementById('mobileUrl').value = config.url;
+                    document.getElementById('mobileToken').value = 'yandex-music-token';
+
+                    showNotification('✅ URL мобильного сервера загружен', 'mobile');
+                }
+
+                closeQRResult();
+            } else {
+                showNotification('❌ Неизвестный формат QR кода', 'error');
+                closeQRResult();
+            }
+        }
+
+        // Закрыть результат QR
+        function closeQRResult() {
+            document.getElementById('qrResult').classList.remove('active');
+            window.qrConfigData = null;
+        }
+
+        // Переключение камеры
+        function toggleCamera() {
+            if (!html5QrCode) return;
+
+            // Останавливаем текущее сканирование
+            html5QrCode.stop();
+
+            // Переключаем камеру
+            if (cameraFacingMode === 'environment') {
+                cameraFacingMode = 'user';
+                document.getElementById('cameraToggleBtn').innerHTML = '<i class="fas fa-camera"></i> Камера: Передняя';
+            } else {
+                cameraFacingMode = 'environment';
+                document.getElementById('cameraToggleBtn').innerHTML = '<i class="fas fa-camera"></i> Камера: Задняя';
+            }
+
+            // Получаем список камер и ищем нужную
+            Html5Qrcode.getCameras()
+                .then(cameras => {
+                    let newCameraId = null;
+
+                    // Ищем камеру с нужным facingMode
+                    cameras.forEach(camera => {
+                        if (cameraFacingMode === 'environment' &&
+                            (camera.label.toLowerCase().includes('back') ||
+                                camera.label.toLowerCase().includes('rear') ||
+                                camera.label.toLowerCase().includes('environment'))) {
+                            newCameraId = camera.id;
+                        } else if (cameraFacingMode === 'user' &&
+                            (camera.label.toLowerCase().includes('front') ||
+                                camera.label.toLowerCase().includes('user'))) {
+                            newCameraId = camera.id;
+                        }
+                    });
+
+                    // Если не нашли, берем первую доступную
+                    if (!newCameraId && cameras.length > 0) {
+                        newCameraId = cameras[0].id;
+                    }
+
+                    if (newCameraId) {
+                        currentCameraId = newCameraId;
+                        startQRScanning();
+                    }
+                })
+                .catch(err => {
+                    console.error('Ошибка переключения камеры:', err);
+                });
+        }
+
+        // Закрытие сканера QR
+        function closeQRScanner() {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop();
+            }
+            document.getElementById('qrScannerModal').classList.remove('active');
+        }
+
+        // Определение типа устройства
+        function detectDeviceType() {
+            const ua = navigator.userAgent;
+
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+                mobileMode = true;
+                document.body.classList.add('mobile-mode');
+                console.log('📱 Мобильное устройство обнаружено');
+            }
+
+            // Определяем тип сети
+            if ('connection' in navigator) {
+                const connection = navigator.connection;
+                networkType = connection.effectiveType;
+                updateNetworkBadge();
+
+                connection.addEventListener('change', () => {
+                    networkType = connection.effectiveType;
+                    updateNetworkBadge();
+                    showNotification(`Сеть: ${networkType}`, 'info');
+                });
+            }
+        }
+
+        // Обновление бейджа сети
+        function updateNetworkBadge() {
+            const badge = document.getElementById('networkBadge');
+            const typeSpan = document.getElementById('networkType');
+
+            if (mobileMode && networkType !== 'wifi') {
+                badge.classList.add('mobile-badge');
+                typeSpan.textContent = 'Мобильный интернет';
+                badge.querySelector('i').className = 'fas fa-signal-alt';
+            } else {
+                badge.classList.remove('mobile-badge');
+                typeSpan.textContent = 'Локальная сеть';
+                badge.querySelector('i').className = 'fas fa-wifi';
+            }
+        }
+
+        // Настройка мониторинга
+        function setupMonitoring() {
+            // Мониторинг батареи
+            if ('getBattery' in navigator) {
+                navigator.getBattery().then(battery => {
+                    updateBatteryDisplay(battery.level * 100);
+
+                    battery.addEventListener('levelchange', () => {
+                        updateBatteryDisplay(battery.level * 100);
+
+                        if (battery.level < 0.2) {
+                            enablePowerSaver();
+                        }
+                    });
+                });
+            }
+
+            // Мониторинг сети
+            if ('connection' in navigator) {
+                const connection = navigator.connection;
+
+                connection.addEventListener('change', () => {
+                    const quality = connection.effectiveType;
+                    const speed = connection.downlink;
+
+                    updateSpeedDisplay(speed);
+
+                    if (quality === '4g' || quality === '3g') {
+                        if (!mobileMode) {
+                            switchToMobileMode();
+                        }
+                    }
+                });
+            }
+        }
+
+        // Настройка жестов
+        function setupGestures() {
+            let startX, startY;
+            let isSwiping = false;
+
+            document.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                isSwiping = true;
+            });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!isSwiping) return;
+
+                const currentX = e.touches[0].clientX;
+                const currentY = e.touches[0].clientY;
+                const diffX = currentX - startX;
+                const diffY = currentY - startY;
+
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                    e.preventDefault();
+
+                    if (diffX > 0) {
+                        navigateSections(-1);
+                    } else {
+                        navigateSections(1);
+                    }
+
+                    isSwiping = false;
+                }
+            });
+
+            document.addEventListener('touchend', () => {
+                isSwiping = false;
+            });
+
+            // Двойное нажатие для Play/Pause
+            let lastTap = 0;
+            document.addEventListener('touchend', (e) => {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+
+                if (tapLength < 300 && tapLength > 0) {
+                    e.preventDefault();
+                    sendCommand('toggle');
+                }
+
+                lastTap = currentTime;
+            });
+        }
+
+        // Навигация по разделам
+        function navigateSections(direction) {
+            const sections = ['status', 'player', 'controls', 'settings'];
+            const currentSection = getCurrentSection();
+            const currentIndex = sections.indexOf(currentSection);
+            let newIndex = currentIndex + direction;
+
+            if (newIndex < 0) newIndex = sections.length - 1;
+            if (newIndex >= sections.length) newIndex = 0;
+
+            showSection(sections[newIndex]);
+        }
+
+        function getCurrentSection() {
+            const sections = ['statusCard', 'playerCard', 'controlsCard', 'settingsCard'];
+            for (let section of sections) {
+                if (!document.getElementById(section).style.display ||
+                    document.getElementById(section).style.display !== 'none') {
+                    return section.replace('Card', '');
+                }
+            }
+            return 'status';
+        }
+
+        // Показать раздел
+        function showSection(section) {
+            // Скрыть все разделы
+            document.getElementById('statusCard').style.display = 'none';
+            document.getElementById('playerCard').style.display = 'none';
+            document.getElementById('controlsCard').style.display = 'none';
+            document.getElementById('settingsCard').style.display = 'none';
+
+            // Показать выбранный раздел
+            const element = document.getElementById(section + 'Card');
+            if (element) {
+                element.style.display = 'block';
+            }
+
+            // Обновить навигацию
+            document.querySelectorAll('.mobile-nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            const navItem = document.querySelector(`.mobile-nav-item[onclick*="${section}"]`);
+            if (navItem) {
+                navItem.classList.add('active');
+            }
+
+            // Вибрация
+            if (mobileMode && 'vibrate' in navigator) {
+                navigator.vibrate(30);
+            }
+        }
+
+        // Настройка горячих клавиш
+        function setupHotkeys() {
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT') return;
+
+                switch (e.key) {
+                    case ' ':
+                        e.preventDefault();
+                        sendCommand('toggle');
+                        break;
+                    case 'ArrowLeft':
+                        sendCommand('previous');
+                        break;
+                    case 'ArrowRight':
+                        sendCommand('next');
+                        break;
+                    case 'q':
+                        if (e.ctrlKey) {
+                            e.preventDefault();
+                            openQRScanner();
+                        }
+                        break;
+                }
+            });
+        }
+
+        // Проверка PWA
+        function checkPWA() {
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+                showNotification('📱 Доступна установка как приложение', 'info');
+            }
+        }
+
+        // Загрузка настроек
+        function loadSettings() {
+            const saved = localStorage.getItem('yandexMusicSettings');
+            if (saved) {
+                try {
+                    currentSettings = JSON.parse(saved);
+
+                    document.getElementById('localIp').value = currentSettings.local.ip;
+                    document.getElementById('localHttpPort').value = currentSettings.local.httpPort;
+                    document.getElementById('localWsPort').value = currentSettings.local.wsPort;
+                    document.getElementById('localToken').value = currentSettings.local.token;
+
+                    document.getElementById('mobileUrl').value = currentSettings.mobile.url;
+                    document.getElementById('mobileToken').value = currentSettings.mobile.token;
+
+                    showTab(currentSettings.mode);
+
+                } catch (err) {
+                    console.error('Ошибка загрузки настроек:', err);
+                }
+            }
+        }
+
+        // Сохранение настроек
+        function saveSettings() {
+            localStorage.setItem('yandexMusicSettings', JSON.stringify(currentSettings));
+            showNotification('✅ Настройки сохранены', 'success');
+        }
+
+        // Показать вкладку
+        function showTab(tabName) {
+            document.querySelectorAll('.connection-tab').forEach(tab => {
+                tab.classList.remove('active', 'mobile-active');
+            });
+
+            const activeTab = document.querySelector(`.connection-tab[onclick*="${tabName}"]`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+                if (tabName === 'mobile') {
+                    activeTab.classList.add('mobile-active');
+                }
+            }
+
+            document.getElementById('localTab').classList.remove('active');
+            document.getElementById('mobileTab').classList.remove('active');
+
+            const tabElement = document.getElementById(tabName + 'Tab');
+            if (tabElement) {
+                tabElement.classList.add('active');
+            }
+
+            currentSettings.mode = tabName;
+            saveSettings();
+
+            if (tabName === 'mobile') {
+                generateQRCode();
+            }
+        }
+
+        // Сохранение локальных настроек
+        function saveLocalSettings() {
+            currentSettings.local = {
+                ip: document.getElementById('localIp').value,
+                httpPort: document.getElementById('localHttpPort').value,
+                wsPort: document.getElementById('localWsPort').value,
+                token: document.getElementById('localToken').value
+            };
+
+            currentSettings.mode = CONFIG.MODES.LOCAL;
+            saveSettings();
+
+            connectToServer();
+        }
+
+        // Сохранение мобильных настроек
+        function saveMobileSettings() {
+            const url = document.getElementById('mobileUrl').value;
+            if (!url) {
+                showNotification('❌ Введите URL сервера', 'error');
+                return;
+            }
+
+            currentSettings.mobile = {
+                url: url,
+                token: document.getElementById('mobileToken').value
+            };
+
+            currentSettings.mode = CONFIG.MODES.MOBILE;
+            saveSettings();
+
+            connectToServer();
+        }
+
+        // Генерация QR кода
+        function generateQRCode() {
+            const qrContainer = document.getElementById('qrCode');
+            const url = document.getElementById('mobileUrl').value || currentSettings.mobile.url;
+
+            if (!url) {
+                qrContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: #666;">Введите URL сервера</div>';
+                return;
+            }
+
+            const config = {
+                type: 'yandex-music-remote',
+                server: url,
+                token: document.getElementById('mobileToken').value || currentSettings.mobile.token,
+                timestamp: new Date().toISOString()
+            };
+
+            // Простой QR код (в реальном проекте используйте библиотеку)
+            qrContainer.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="background: #000; color: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px;">
+                        ${url}
+                    </div>
+                    <div style="color: #666; font-size: 0.9rem;">
+                        Используйте этот URL для подключения
+                    </div>
+                </div>
+            `;
+        }
+
+        // Подключение к серверу
+        async function connectToServer() {
+            const connectBtn = document.getElementById('connectBtn');
+            const statusCircle = document.getElementById('statusCircle');
+            const statusText = document.getElementById('statusText');
+            const statusLabel = document.getElementById('statusLabel');
+            const statusMessage = document.getElementById('statusMessage');
+
+            let httpUrl, wsUrl, token;
+
+            if (currentSettings.mode === CONFIG.MODES.LOCAL) {
+                const local = currentSettings.local;
+                httpUrl = `http://${local.ip}:${local.httpPort}`;
+                wsUrl = `ws://${local.ip}:${local.wsPort}`;
+                token = local.token;
+            } else {
+                const mobile = currentSettings.mobile;
+                httpUrl = mobile.url.replace(/\/$/, '');
+                wsUrl = mobile.url.replace(/^http/, 'ws').replace(/\/$/, '');
+                token = mobile.token;
+            }
+
+            connectBtn.classList.add('loading');
+            if (currentSettings.mode === CONFIG.MODES.MOBILE) {
+                connectBtn.classList.add('mobile-loading');
+            }
+
+            statusLabel.textContent = 'Подключение...';
+            statusMessage.textContent = `Соединение с ${httpUrl}`;
+
+            if (ws) {
+                ws.close();
+            }
+
+            const fullWsUrl = `${wsUrl}?token=${token}`;
+            console.log(`🔌 Подключение: ${fullWsUrl}`);
+
+            try {
+                ws = new WebSocket(fullWsUrl);
+
+                ws.onopen = () => {
+                    console.log('✅ WebSocket подключен');
+                    isConnected = true;
+
+                    statusCircle.classList.add('connected');
+                    statusText.textContent = 'ON';
+                    statusLabel.textContent = 'Подключено';
+                    statusMessage.textContent = currentSettings.mode === CONFIG.MODES.LOCAL ?
+                        'Локальная сеть' : 'Мобильный интернет';
+
+                    connectBtn.classList.remove('loading', 'mobile-loading');
+                    connectBtn.innerHTML = '<i class="fas fa-check"></i> Подключено';
+                    connectBtn.classList.add('btn-success');
+
+                    showNotification('✅ Успешное подключение', 'success');
+
+                    document.getElementById('playerCard').style.display = 'block';
+                    document.getElementById('controlsCard').style.display = 'block';
+
+                    getPlayerStatus();
+
+                    if (statusInterval) clearInterval(statusInterval);
+                    statusInterval = setInterval(getPlayerStatus, CONFIG.PERFORMANCE.updateInterval);
+
+                    startPing();
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+
+                        if (data.type === 'welcome') {
+                            console.log('Приветствие:', data.message);
+                        } else if (data.command === 'status') {
+                            updatePlayerUI(data);
+                        } else if (data.ping) {
+                            updatePingDisplay(Date.now() - data.ping);
+                        }
+                    } catch (err) {
+                        console.error('Ошибка парсинга:', err);
+                    }
+                };
+
+                ws.onclose = () => {
+                    console.log('❌ WebSocket отключен');
+                    isConnected = false;
+
+                    statusCircle.classList.remove('connected');
+                    statusText.textContent = 'OFF';
+                    statusLabel.textContent = 'Не подключено';
+                    connectBtn.classList.remove('loading', 'mobile-loading', 'btn-success');
+                    connectBtn.innerHTML = '<i class="fas fa-plug"></i> Подключиться';
+
+                    document.getElementById('playerCard').style.display = 'none';
+                    document.getElementById('controlsCard').style.display = 'none';
+
+                    showNotification('❌ Соединение разорвано', 'error');
+
+                    if (statusInterval) {
+                        clearInterval(statusInterval);
+                        statusInterval = null;
+                    }
+
+                    if (pingInterval) {
+                        clearInterval(pingInterval);
+                        pingInterval = null;
+                    }
+
+                    setTimeout(connectToServer, CONFIG.PERFORMANCE.reconnectDelay);
+                };
+
+                ws.onerror = (error) => {
+                    console.error('WebSocket ошибка:', error);
+                    statusLabel.textContent = 'Ошибка подключения';
+                    connectBtn.classList.remove('loading', 'mobile-loading');
+
+                    if (currentSettings.mode === CONFIG.MODES.MOBILE) {
+                        showNotification('❌ Не удалось подключиться через мобильный интернет', 'error');
+                    } else {
+                        showNotification('❌ Ошибка подключения к локальному серверу', 'error');
+                    }
+                };
+
+            } catch (error) {
+                console.error('Ошибка создания WebSocket:', error);
+                statusLabel.textContent = 'Ошибка';
+                statusMessage.textContent = error.message;
+                connectBtn.classList.remove('loading', 'mobile-loading');
+
+                showNotification('❌ Не удалось создать соединение', 'error');
+            }
+        }
+
+        // Отправка пинга
+        function startPing() {
+            if (pingInterval) clearInterval(pingInterval);
+
+            pingInterval = setInterval(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ ping: Date.now() }));
+                }
+            }, CONFIG.PERFORMANCE.pingInterval);
+        }
+
+        // Обновление отображения пинга
+        function updatePingDisplay(ping) {
+            const pingElement = document.getElementById('pingValue');
+            pingElement.textContent = `${ping}ms`;
+
+            if (ping < 50) {
+                pingElement.style.color = '#00CC66';
+            } else if (ping < 150) {
+                pingElement.style.color = '#FF9900';
+            } else {
+                pingElement.style.color = '#FF3333';
+            }
+        }
+
+        // Обновление отображения скорости
+        function updateSpeedDisplay(speed) {
+            const speedElement = document.getElementById('speedValue');
+            if (speed) {
+                speedElement.textContent = `${speed} Mbps`;
+            }
+        }
+
+        // Обновление отображения батареи
+        function updateBatteryDisplay(level) {
+            batteryLevel = level;
+            const batteryElement = document.getElementById('batteryValue');
+            batteryElement.textContent = `${Math.round(level)}%`;
+
+            if (level < 20) {
+                batteryElement.style.color = '#FF3333';
+            } else if (level < 50) {
+                batteryElement.style.color = '#FF9900';
+            } else {
+                batteryElement.style.color = '#00CC66';
+            }
+        }
+
+        // Включение энергосберегающего режима
+        function enablePowerSaver() {
+            if (CONFIG.PERFORMANCE.mobileDataSaver) return;
+
+            CONFIG.PERFORMANCE.mobileDataSaver = true;
+            document.body.classList.add('battery-saver');
+
+            if (statusInterval) {
+                clearInterval(statusInterval);
+                statusInterval = setInterval(getPlayerStatus, 5000);
+            }
+
+            showNotification('🔋 Включён энергосберегающий режим', 'warning');
+        }
+
+        // Получение статуса плеера
+        async function getPlayerStatus() {
+            if (!isConnected) return;
+
+            try {
+                let httpUrl, token;
+
+                if (currentSettings.mode === CONFIG.MODES.LOCAL) {
+                    const local = currentSettings.local;
+                    httpUrl = `http://${local.ip}:${local.httpPort}`;
+                    token = local.token;
+                } else {
+                    const mobile = currentSettings.mobile;
+                    httpUrl = mobile.url.replace(/\/$/, '');
+                    token = mobile.token;
+                }
+
+                const response = await fetch(`${httpUrl}/status?token=${token}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                updatePlayerUI(data);
+
+            } catch (err) {
+                console.error('Ошибка получения статуса:', err);
+
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    sendCommand('status');
+                }
+            }
+        }
+
+        // Обновление интерфейса плеера
+        function updatePlayerUI(data) {
+            currentStatus = data;
+
+            // Трек. Обновляем, только если пришли данные с названием.
+            if (data?.track?.success && data.track.title) {
+                document.getElementById('trackTitle').textContent = data.track.title || 'Трек не выбран';
+                document.getElementById('trackArtist').textContent = data.track.artist || 'Исполнитель не указан';
+
+                if (data.track.coverUrl) {
+                    const img = document.getElementById('albumImage');
+                    const placeholder = document.getElementById('albumPlaceholder');
+
+                    // Обновляем обложку, только если она изменилась
+                    if (img.src !== data.track.coverUrl) {
+                        img.src = data.track.coverUrl;
+                    }
+                    img.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                } else {
+                    // Если обложки нет, показываем заглушку
+                    document.getElementById('albumImage').classList.add('hidden');
+                    document.getElementById('albumPlaceholder').classList.remove('hidden');
+                }
+            }
+
+            // Время
+            if (data.time && data.time.success) {
+                document.getElementById('currentTime').textContent = data.time.currentTime || '0:00';
+                document.getElementById('totalTime').textContent = data.time.totalTime || '0:00';
+
+                const progress = data.time.percent || 0;
+                document.getElementById('progressFill').style.width = `${progress}%`;
+
+                playerIsPlaying = progress > 0 && progress < 100;
+            }
+
+            // Громкость
+            if (data.volume && data.volume.success) {
+                const volumePercent = data.volume.percentage || 0;
+                const isMuted = data.volume.isMuted;
+                const volumeSlider = document.getElementById('volumeSlider');
+
+                document.getElementById('volumeValue').textContent = isMuted ? 'MUTED' : `${volumePercent}%`;
+                volumeSlider.value = volumePercent;
+                volumeSlider.style.setProperty('--volume-percent', `${volumePercent}%`);
+
+                if (volumeSlider) {
+                    volumeSlider.value = volumePercent / 100;
+                    const backgroundSize = isMuted ? 0 : volumePercent;
+                    volumeSlider.style.backgroundSize = `${backgroundSize}% 100%`;
+                    volumeSlider.style.setProperty('--seek-before-width', `${backgroundSize}%`);
+                }
+                const muteIcon = document.getElementById('muteIcon');
+                const muteText = document.getElementById('muteText');
+
+                if (isMuted) {
+
+                    muteIcon.className = 'fas fa-volume-up';
+                    muteText.textContent = 'Вкл. звук';
+                } else {
+
+                    muteIcon.className = 'fas fa-volume-mute';
+                    muteText.textContent = 'Выкл. звук';
+                }
+            }
+
+            // Состояние воспроизведения
+            const playIcon = document.getElementById('playIcon');
+            const playerCard = document.getElementById('playerCard');
+
+            if (playerIsPlaying) {
+                playIcon.className = 'fas fa-pause';
+                playerCard.classList.add('player-playing');
+            } else {
+                playIcon.className = 'fas fa-play';
+                playerCard.classList.remove('player-playing');
+            }
+        }
+
+        // Отправка команды
+        function sendCommand(command, value) {
+            if (!isConnected) {
+                showNotification('❌ Не подключено к серверу', 'error');
+                return;
+            }
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const message = value ? { command, value } : { command };
+                ws.send(JSON.stringify(message));
+
+                setTimeout(getPlayerStatus, 300);
+
+                if (mobileMode && 'vibrate' in navigator) {
+                    navigator.vibrate(30);
+                }
+            }
+        }
+
+        // Изменение громкости
+        function changeVolume(delta) {
+            sendCommand(delta > 0 ? 'volumeup' : 'volumedown');
+        }
+
+        // Перемотка по клику
+        function seekTrack(event) {
+            if (!currentStatus?.time?.max) return;
+
+            const slider = event.currentTarget;
+            const rect = slider.getBoundingClientRect();
+            const percent = (event.clientX - rect.left) / rect.width * 100;
+            const seconds = Math.round((currentStatus.time.max * percent) / 100);
+
+            sendCommand('seek', seconds);
+        }
+
+        // Перемотка через диалог
+        function showSeekDialog() {
+            const seconds = prompt('Перемотка (секунды):', '30');
+            if (seconds && !isNaN(seconds)) {
+                sendCommand('seek', parseInt(seconds));
+            }
+        }
+
+        // Показать текст песни
+        function showLyrics() {
+            showNotification('📜 Функция текста песни в разработке', 'info');
+        }
+
+        // Показать очередь
+        function showQueue() {
+            showNotification('📋 Функция очереди в разработке', 'info');
+        }
+
+        // Показать настройки подключения
+        function showConnectionSettings() {
+            showSection('settings');
+        }
+
+        // Обновление статуса
+        function refreshStatus() {
+            getPlayerStatus();
+            showNotification('🔄 Статус обновлён', 'success');
+        }
+
+        // Переключение мобильного режима
+        function toggleMobileMode() {
+            mobileMode = !mobileMode;
+
+            if (mobileMode) {
+                showNotification('📱 Включён мобильный режим', 'mobile');
+                document.body.classList.add('mobile-mode');
+                showTab('mobile');
+            } else {
+                showNotification('💻 Включён десктопный режим', 'info');
+                document.body.classList.remove('mobile-mode');
+                showTab('local');
+            }
+        }
+
+        // Переключение на мобильный режим
+        function switchToMobileMode() {
+            if (!mobileMode) {
+                mobileMode = true;
+                showNotification('📱 Автоматически включён мобильный режим', 'mobile');
+                updateNetworkBadge();
+            }
+        }
+
+        // Сканирование локальной сети
+        function scanLocalNetwork() {
+            showNotification('🔍 Поиск серверов в сети...', 'info');
+
+            setTimeout(() => {
+                showNotification('✅ Сервер найден: 192.168.1.100', 'success');
+                document.getElementById('localIp').value = '192.168.1.100';
+                saveLocalSettings();
+            }, 2000);
+        }
+
+        // Показать уведомление
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const text = document.getElementById('notificationText');
+            const icon = document.getElementById('notificationIcon');
+
+            switch (type) {
+                case 'success':
+                    icon.className = 'fas fa-check-circle notification-icon';
+                    break;
+                case 'error':
+                    icon.className = 'fas fa-exclamation-circle notification-icon';
+                    break;
+                case 'warning':
+                    icon.className = 'fas fa-exclamation-triangle notification-icon';
+                    break;
+                case 'mobile':
+                    icon.className = 'fas fa-mobile-alt notification-icon';
+                    break;
+                default:
+                    icon.className = 'fas fa-info-circle notification-icon';
+            }
+
+            text.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+
+            if (mobileMode && 'vibrate' in navigator) {
+                if (type === 'error') {
+                    navigator.vibrate([100, 50, 100]);
+                } else {
+                    navigator.vibrate(100);
+                }
+            }
+        }
+
+        // Экспорт функций
+        window.connectToServer = connectToServer;
+        window.showConnectionSettings = showConnectionSettings;
+        window.toggleMobileMode = toggleMobileMode;
+        window.refreshStatus = refreshStatus;
+        window.showSection = showSection;
+        window.showTab = showTab;
+        window.saveLocalSettings = saveLocalSettings;
+        window.saveMobileSettings = saveMobileSettings;
+        window.generateQRCode = generateQRCode;
+        window.scanLocalNetwork = scanLocalNetwork;
+        window.sendCommand = sendCommand;
+        window.changeVolume = changeVolume;
+
+        window.showSeekDialog = showSeekDialog;
+        window.showLyrics = showLyrics;
+        window.showQueue = showQueue;
+        window.openQRScanner = openQRScanner;
+        window.closeQRScanner = closeQRScanner;
+        window.toggleCamera = toggleCamera;
+        window.applyQRSettings = applyQRSettings;
+        window.closeQRResult = closeQRResult;
+    </script>
+</body>
+
+</html>
