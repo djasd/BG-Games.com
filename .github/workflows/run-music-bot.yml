@@ -1,59 +1,33 @@
-name: Yandex Music with Debug
+name: Simple Music Server
 
-on:
-  workflow_dispatch:
-    inputs:
-      duration:
-        description: 'Duration in minutes'
-        required: true
-        default: '10'
+on: [workflow_dispatch]
 
 jobs:
-  yandex-music-debug:
+  run-server:
     runs-on: windows-latest
-    timeout-minutes: ${{ github.event.inputs.duration || 10 }}
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup Node.js
+    - name: Setup Node
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '18'
         
-    - name: Install dependencies
-      run: npm ci
+    - run: npm install
     
-    - name: Check ports before start
+    - name: Modify start.bat для GitHub Actions
       run: |
-        netstat -ano | findstr :9222 && echo "⚠️ Port 9222 is in use!" || echo "✅ Port 9222 is free"
-        netstat -ano | findstr :3002 && echo "⚠️ Port 3002 is in use!" || echo "✅ Port 3002 is free"
-      shell: cmd
+        # Убираем pause для автоматического выполнения
+        (Get-Content start.bat) -replace 'pause', 'echo Script completed' | Set-Content start.bat
+        Get-Content start.bat
+      shell: pwsh
       
-    - name: Start server with environment variables
-      env:
-        YANDEX_MUSIC_PORT: 9222
-        SERVER_PORT: 3002
-        NODE_ENV: production
+    - name: Execute
+      run: cmd /c start.bat
+      
+    - name: Check if server is running
       run: |
-        echo "Configuration:"
-        echo "Yandex Music Debug Port: %YANDEX_MUSIC_PORT%"
-        echo "Server Port: %SERVER_PORT%"
-        
-        echo "📡 Starting servers..."
-        
-        # Запускаем в фоновом режиме и сохраняем PID
-        start /B cmd /c "node setup.js"
         timeout /t 5
-        
-        # Проверяем, что процессы запустились
-        tasklist | findstr node
-        netstat -ano | findstr :3002 && echo "✅ Server is running" || echo "❌ Server failed to start"
-      shell: cmd
-      
-    - name: Keep alive for testing
-      if: github.event_name == 'workflow_dispatch'
-      run: |
-        echo "⏰ Running for ${{ github.event.inputs.duration || 10 }} minutes..."
-        timeout /t ${{ github.event.inputs.duration || 600 }}
+        tasklist /fi "imagename eq node.exe"
       shell: cmd
