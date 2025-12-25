@@ -1,0 +1,49 @@
+name: Debug Yandex Music
+
+on:
+  workflow_dispatch
+
+jobs:
+  debug-music:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Check Chrome/Chromium installation
+      run: |
+        where chrome || where chromium || where msedge
+        echo "Note: Yandex Music might need Chrome with remote debugging"
+      shell: cmd
+      
+    - name: Start debug setup
+      env:
+        DEBUG_PORT: "9222"
+        SERVER_PORT: "3002"
+      run: |
+        echo "Debug Port: %DEBUG_PORT%"
+        echo "Server Port: %SERVER_PORT%"
+        
+        # Создаем конфиг файл если нужно
+        if not exist config.json (
+          echo {"debugPort": %DEBUG_PORT%, "serverPort": %SERVER_PORT%} > config.json
+        )
+        
+        # Запускаем setup
+        echo "🚀 Starting server..."
+        node setup.js
+        
+        echo "⚠️ Note: In GitHub Actions, UI applications like Yandex Music won't display"
+        echo "But the server part should work if setup.js doesn't require GUI"
+      shell: cmd
+      
+    - name: Cleanup
+      if: always()
+      run: |
+        taskkill /F /IM node.exe 2>nul || echo "No node processes to kill"
+      shell: cmd
