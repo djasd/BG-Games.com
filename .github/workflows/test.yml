@@ -1,0 +1,22 @@
+name: Test Music Integration
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-integration:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Яндекс.Музыка
+      run: |
+        # Установка через Chocolatey (если есть пакет)
+        choco install yandex-music -y
+      continue-on-error: true  # Продолжить даже если установка не удалась
+      
+    - name: Run setup
+      run: node setup.js
+      env:
+        MOCK_MODE: "true"  # Режим эмуляции для CI
