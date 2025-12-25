@@ -1,8 +1,109 @@
- name: Setup and run
-  run: |
-    # Установка Яндекс.Музыка (если требуется)
-    # Запуск с параметрами отладки
-    Start-Process -FilePath "yandexmusic.exe" -ArgumentList "--remote-debugging-port=9222"
-    Start-Sleep -Seconds 10
-    node setup.js
-  shell: pwsh
+name: Yandex Music Automation
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: # Позволяет запускать вручную
+  schedule:
+    - cron: '0 */6 * * *' # Запускать каждые 6 часов
+
+jobs:
+  start-yandex-music:
+    runs-on: windows-latest
+    
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: 📦 Install dependencies
+      run: |
+        npm install
+      shell: pwsh
+      
+    - name: 🚫 Kill existing processes (cleanup)
+      run: |
+        taskkill /F /IM "YandexMusic.exe" 2>nul || echo "Yandex Music not running"
+        taskkill /F /IM "node.exe" 2>nul || echo "Node processes cleaned"
+      shell: cmd
+      
+    - name: ▶️ Start Yandex Music with debugging
+      run: |
+        # Находим путь к Яндекс.Музыка
+        $musicPath = "$env:LOCALAPPDATA\Yandex\YandexMusic\application\YandexMusic.exe"
+        
+        if (Test-Path $musicPath) {
+          echo "🚀 Запускаем Яндекс.Музыка с отладкой..."
+          Start-Process -FilePath $musicPath -ArgumentList "--remote-debugging-port=9222"
+          Start-Sleep -Seconds 5
+        } else {
+          echo "⚠️ Яндекс.Музыка не найдена по пути: $musicPath"
+          echo "🔍 Ищем в других расположениях..."
+          
+          # Альтернативные пути
+          $paths = @(
+            "$env:APPDATA\Yandex\YandexMusic\YandexMusic.exe",
+            "$env:PROGRAMFILES\Yandex\YandexMusic\YandexMusic.exe",
+            "$env:PROGRAMFILES(X86)\Yandex\YandexMusic\YandexMusic.exe"
+          )
+          
+          foreach ($path in $paths) {
+            if (Test-Path $path) {
+              echo "✅ Найдено: $path"
+              Start-Process -FilePath $path -ArgumentList "--remote-debugging-port=9222"
+              Start-Sleep -Seconds 5
+              break
+            }
+          }
+        }
+      shell: pwsh
+      
+    - name: 📡 Run setup.js and servers
+      run: |
+        echo "🌐 Проверяем подключение..."
+        timeout /t 10 /nobreak
+        
+        echo "🚀 Запускаем серверы..."
+        call start.bat
+      shell: cmd
+      
+    - name: 🧪 Test connection
+      run: |
+        echo "🧪 Проверяем доступность серверов..."
+        
+        # Проверка HTTP сервера
+        $httpTest = Invoke-WebRequest -Uri "http://localhost:3002" -Method GET -TimeoutSec 5 -ErrorAction SilentlyContinue
+        if ($httpTest.StatusCode -eq 200) {
+          echo "✅ HTTP сервер работает на порту 3002"
+        } else {
+          echo "❌ HTTP сервер не отвечает"
+        }
+        
+        # Проверка WebSocket
+        try {
+          $wsTest = New-Object System.Net.Sockets.TcpClient
+          $wsTest.Connect("localhost", 3002)
+          if ($wsTest.Connected) {
+            echo "✅ WebSocket сервер слушает порт 3002"
+            $wsTest.Close()
+          }
+        } catch {
+          echo "❌ WebSocket сервер не доступен"
+        }
+      shell: pwsh
+      
+    - name: 📊 Display status
+      run: |
+        echo "📊 Статус процессов:"
+        tasklist | findstr /i "YandexMusic node"
+        
+        echo ""
+        echo "🌐 Сетевые подключения:"
+        netstat -an | findstr ":3002 :9222"
+      shell: cmd
