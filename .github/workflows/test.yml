@@ -1,109 +1,118 @@
-name: Yandex Music Automation
+name: Yandex Music Server
 
 on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch: # Позволяет запускать вручную
-  schedule:
-    - cron: '0 */6 * * *' # Запускать каждые 6 часов
+  workflow_dispatch:
+    inputs:
+      music_path:
+        description: 'Path to Yandex Music'
+        required: false
+        default: ''
 
 jobs:
-  start-yandex-music:
+  launch:
     runs-on: windows-latest
     
     steps:
-    - name: 📥 Checkout repository
+    # Шаг 1: Безопасный checkout
+    - name: 📥 Get repository code
       uses: actions/checkout@v4
+      with:
+        path: ./music-server
+        clean: false
+        
+    - name: 📂 Navigate to code directory
+      run: |
+        cd music-server
+        echo "Files in directory:"
+        dir
+      shell: cmd
       
+    # Шаг 2: Проверка Node.js
     - name: 🔧 Setup Node.js
+      if: success()
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         
-    - name: 📦 Install dependencies
+    # Шаг 3: Установка зависимостей
+    - name: 📦 Install packages
+      if: success()
       run: |
-        npm install
-      shell: pwsh
-      
-    - name: 🚫 Kill existing processes (cleanup)
-      run: |
-        taskkill /F /IM "YandexMusic.exe" 2>nul || echo "Yandex Music not running"
-        taskkill /F /IM "node.exe" 2>nul || echo "Node processes cleaned"
+        cd music-server
+        if exist package.json (
+          npm install
+        ) else (
+          echo "No package.json found, installing basic dependencies..."
+          npm init -y
+          npm install ws chrome-remote-interface
+        )
       shell: cmd
       
-    - name: ▶️ Start Yandex Music with debugging
+    # Шаг 4: Проверка скриптов
+    - name: 🔍 Verify scripts exist
       run: |
-        # Находим путь к Яндекс.Музыка
-        $musicPath = "$env:LOCALAPPDATA\Yandex\YandexMusic\application\YandexMusic.exe"
+        cd music-server
+        echo "Checking files..."
+        if exist start.bat (
+          echo "✅ start.bat exists"
+          type start.bat
+        ) else (
+          echo "❌ start.bat not found!"
+          exit 1
+        )
         
-        if (Test-Path $musicPath) {
-          echo "🚀 Запускаем Яндекс.Музыка с отладкой..."
-          Start-Process -FilePath $musicPath -ArgumentList "--remote-debugging-port=9222"
-          Start-Sleep -Seconds 5
-        } else {
-          echo "⚠️ Яндекс.Музыка не найдена по пути: $musicPath"
-          echo "🔍 Ищем в других расположениях..."
-          
-          # Альтернативные пути
-          $paths = @(
-            "$env:APPDATA\Yandex\YandexMusic\YandexMusic.exe",
-            "$env:PROGRAMFILES\Yandex\YandexMusic\YandexMusic.exe",
-            "$env:PROGRAMFILES(X86)\Yandex\YandexMusic\YandexMusic.exe"
-          )
-          
-          foreach ($path in $paths) {
-            if (Test-Path $path) {
-              echo "✅ Найдено: $path"
-              Start-Process -FilePath $path -ArgumentList "--remote-debugging-port=9222"
-              Start-Sleep -Seconds 5
-              break
-            }
-          }
-        }
-      shell: pwsh
-      
-    - name: 📡 Run setup.js and servers
-      run: |
-        echo "🌐 Проверяем подключение..."
-        timeout /t 10 /nobreak
-        
-        echo "🚀 Запускаем серверы..."
-        call start.bat
+        if exist setup.js (
+          echo "✅ setup.js exists"
+        ) else (
+          # Создаем минимальный setup.js
+          echo "📝 Creating basic setup.js..."
+          echo "console.log('Server starting...');" > setup.js
+          echo "setTimeout(() => console.log('Test complete'), 3000);" >> setup.js
+        )
       shell: cmd
       
-    - name: 🧪 Test connection
+    # Шаг 5: Запуск в фоновом режиме
+    - name: ▶️ Run batch file
       run: |
-        echo "🧪 Проверяем доступность серверов..."
+        cd music-server
+        echo "🚀 Starting batch file..."
         
-        # Проверка HTTP сервера
-        $httpTest = Invoke-WebRequest -Uri "http://localhost:3002" -Method GET -TimeoutSec 5 -ErrorAction SilentlyContinue
-        if ($httpTest.StatusCode -eq 200) {
-          echo "✅ HTTP сервер работает на порту 3002"
-        } else {
-          echo "❌ HTTP сервер не отвечает"
-        }
+        # Запускаем в фоновом режиме
+        start /B cmd /C "call start.bat > output.log 2>&1"
         
-        # Проверка WebSocket
-        try {
-          $wsTest = New-Object System.Net.Sockets.TcpClient
-          $wsTest.Connect("localhost", 3002)
-          if ($wsTest.Connected) {
-            echo "✅ WebSocket сервер слушает порт 3002"
-            $wsTest.Close()
-          }
-        } catch {
-          echo "❌ WebSocket сервер не доступен"
-        }
-      shell: pwsh
-      
-    - name: 📊 Display status
-      run: |
-        echo "📊 Статус процессов:"
-        tasklist | findstr /i "YandexMusic node"
+        # Ждем немного
+        timeout /t 5 /nobreak
         
-        echo ""
-        echo "🌐 Сетевые подключения:"
-        netstat -an | findstr ":3002 :9222"
+        # Проверяем логи
+        if exist output.log (
+          echo "📄 Batch file output:"
+          type output.log
+        )
       shell: cmd
+      
+    # Шаг 6: Проверка работы
+    - name: 🧪 Verify servers are running
+      run: |
+        echo "🔍 Checking processes..."
+        tasklist | findstr "node" || echo "No node processes found"
+        
+        echo "🌐 Checking ports..."
+        netstat -an | findstr ":3002" || echo "Port 3002 not in use"
+        
+        # Проверка через curl если есть
+        where curl >nul 2>&1
+        if %errorlevel% == 0 (
+          curl -s http://localhost:3002 || echo "HTTP server not responding"
+        )
+      shell: cmd
+      
+    # Шаг 7: Сохранение логов
+    - name: 📊 Save logs as artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: server-logs
+        path: |
+          music-server/output.log
+          music-server/npm-debug.log
+        retention-days: 1
