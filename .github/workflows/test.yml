@@ -1,22 +1,15 @@
-name: Test Music Integration
+@echo off
+echo Запуск сервера Яндекс.Музыка...
+echo.
 
-on:
-  workflow_dispatch:
+REM Убедитесь, что Яндекс.Музыка запущена с параметром:
+REM --remote-debugging-port=9222
 
-jobs:
-  test-integration:
-    runs-on: windows-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install Яндекс.Музыка
-      run: |
-        # Установка через Chocolatey (если есть пакет)
-        choco install yandex-music -y
-      continue-on-error: true  # Продолжить даже если установка не удалась
-      
-    - name: Run setup
-      run: node setup.js
-      env:
-        MOCK_MODE: "true"  # Режим эмуляции для CI
+echo 📡 Запуск HTTP сервера на порту 3002...
+echo 🔌 Запуск WebSocket сервера на порту 3002...
+echo.
+
+node setup.js
+
+
+pause
