@@ -2,9 +2,9 @@
   "name": "yandex-music-automation",
   "version": "1.0.0",
   "description": "Automation for Yandex Music desktop app",
-  "main": "setup.js",
+  "main": "node server.js",
   "scripts": {
-    "start": "node setup.js",
+    "start": "node server.js",
     "test": "echo \"No tests specified\""
   },
   "dependencies": {
